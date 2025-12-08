@@ -20,11 +20,13 @@
 
 1. **Установите .dotnet 9.0**
    ```bash
-   sudo pacman -S dotnet-sdk-9.0 #arch-based
+   #arch-based
+   sudo pacman -S dotnet-sdk-9.0
    ```
    или другие менеджеры пакетов (зависит от дистрибутива)
    ```bash
-   sudo apt install dotnet-sdk-9.0 #debian-based
+   #debian-based
+   sudo apt install dotnet-sdk-9.0
    ```
 
 3. **Клонируйте репозиторий** (или откройте проект):
