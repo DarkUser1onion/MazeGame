@@ -1,0 +1,181 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:MazeGame.Controls"
+        xmlns:models="clr-namespace:MazeGame.Models"
+        mc:Ignorable="d"
+        d:DesignWidth="1200"
+        d:DesignHeight="800"
+        x:Class="MazeGame.MainWindow"
+        Title="Maze Game"
+        Background="#0F1419"
+        Padding="0">
+    <Grid ColumnDefinitions="300,*" RowDefinitions="Auto,*">
+        <!-- Левая панель с настройками и лидербордом -->
+        <Border Grid.Column="0" 
+                Background="#1A1F2E"
+                BorderBrush="#2A3441"
+                BorderThickness="0,0,1,0">
+            <Grid RowDefinitions="Auto,Auto,*">
+                <!-- Настройки генерации -->
+                <Border Grid.Row="0"
+                        Background="#252B3B"
+                        Padding="16"
+                        Margin="12,12,12,8">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Настройки лабиринта" 
+                                   Foreground="#E0E6ED"
+                                   FontSize="16"
+                                   FontWeight="Bold"/>
+                        
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Ширина" Foreground="#B8C5D1" FontSize="12"/>
+                            <NumericUpDown Name="WidthInput"
+                                           Minimum="5"
+                                           Maximum="60"
+                                           Value="20"
+                                           Background="#1A1F2E"
+                                           Foreground="#E0E6ED"
+                                           BorderBrush="#3A4551"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Высота" Foreground="#B8C5D1" FontSize="12"/>
+                            <NumericUpDown x:Name="HeightInput"
+                                           Minimum="5"
+                                           Maximum="60"
+                                           Value="20"
+                                           Background="#1A1F2E"
+                                           Foreground="#E0E6ED"
+                                           BorderBrush="#3A4551"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Seed (опционально)" Foreground="#B8C5D1" FontSize="12"/>
+                            <TextBox x:Name="SeedInput"
+                                     Watermark="Случайно"
+                                     Background="#1A1F2E"
+                                     Foreground="#E0E6ED"
+                                     BorderBrush="#3A4551"/>
+                        </StackPanel>
+
+                        <Button Content="🎲 Сгенерировать"
+                                Click="OnGenerateMaze"
+                                Padding="12,8"
+                                Background="#4A90E2"
+                                Foreground="White"
+                                FontWeight="Bold"
+                                Cursor="Hand"/>
+
+                        <Separator Background="#3A4551" Margin="0,8"/>
+
+                        <StackPanel Spacing="8">
+                            <CheckBox Name="ShowHintsCheckBox"
+                                      Content="💡 Показывать подсказки"
+                                      Foreground="#B8C5D1"
+                                      IsChecked="True"/>
+                            <CheckBox Name="MouseControlCheckBox"
+                                      Content="🖱️ Управление мышкой (перетаскивание)"
+                                      Foreground="#B8C5D1"
+                                      IsChecked="False"/>
+                            <Button Name="RunAiButton"
+                                    Content="🤖 Запустить ИИ до цели"
+                                    Click="OnRunAiToTarget"
+                                    Padding="12,8"
+                                    Background="#6A4C93"
+                                    Foreground="White"
+                                    FontWeight="Bold"
+                                    Cursor="Hand"
+                                    IsEnabled="False"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Статистика -->
+                <Border Grid.Row="1"
+                        Background="#252B3B"
+                        Padding="16"
+                        Margin="12,0,12,8">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Статистика" 
+                                   Foreground="#E0E6ED"
+                                   FontSize="16"
+                                   FontWeight="Bold"/>
+                        <TextBlock Name="StatusText"
+                                   Text="Используйте стрелки или WASD"
+                                   Foreground="#B8C5D1"
+                                   TextWrapping="Wrap"/>
+                        <TextBlock Name="StatsText"
+                                   Text="Шагов: 0"
+                                   Foreground="#7A8FA3"
+                                   FontSize="12"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Лидерборд -->
+                <Border Grid.Row="2"
+                        Background="#252B3B"
+                        Padding="16"
+                        Margin="12,0,12,12">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="🏆 Лидерборд" 
+                                   Foreground="#E0E6ED"
+                                   FontSize="16"
+                                   FontWeight="Bold"/>
+                        <ScrollViewer MaxHeight="300">
+                            <ItemsControl Name="LeaderboardList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:LeaderboardEntry">
+                                        <Border Background="#1A1F2E"
+                                                Padding="8"
+                                                Margin="0,0,0,4"
+                                                CornerRadius="4">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding PlayerName}"
+                                                           Foreground="#E0E6ED"
+                                                           FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding FormattedTime}"
+                                                           Foreground="#4A90E2"
+                                                           FontSize="14"/>
+                                                <TextBlock Text="{Binding Steps, StringFormat='{}Шагов: {0}'}"
+                                                           Foreground="#7A8FA3"
+                                                           FontSize="11"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Основная область с лабиринтом -->
+        <Grid Grid.Column="1" RowDefinitions="Auto,*">
+            <Border Grid.Row="0"
+                    Background="#1A1F2E"
+                    Padding="16,12"
+                    BorderBrush="#2A3441"
+                    BorderThickness="0,0,0,1">
+                <TextBlock Text="🎮 Лабиринт"
+                           Foreground="#E0E6ED"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"/>
+            </Border>
+
+            <Border Grid.Row="1"
+                    Background="#0F1419"
+                    Padding="20">
+                <controls:MazeView Name="MazeCanvas"
+                                   PathBrush="#2A3441"
+                                   StartBrush="#4CAF50"
+                                   FinishBrush="#E53935"
+                                   PathLineBrush="#FFD700"
+                                   Cursor="Hand"/>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
