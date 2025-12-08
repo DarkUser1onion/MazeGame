@@ -1,0 +1,72 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:MazeGame.Controls"
+        mc:Ignorable="d"
+        d:DesignWidth="900"
+        d:DesignHeight="700"
+        x:Class="MazeGame.MainWindow"
+        Title="Maze Game"
+        Opacity="0.8"
+        Background="#1E1E1E"
+        Padding="16">
+    <Grid RowDefinitions="Auto,*">
+        <Border CornerRadius="20" Background="#2B2B2B" Padding="12">
+            <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Ширина" 
+                               Foreground="White"
+                               HorizontalAlignment="Center"/>
+                    <NumericUpDown Name="WidthInput"
+                                   Minimum="5"
+                                   Maximum="60"
+                                   Value="20"/>
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Высота" 
+                               Foreground="White"
+                               HorizontalAlignment="Center"/>
+                    <NumericUpDown x:Name="HeightInput"
+                                   Minimum="5"
+                                   Maximum="60"
+                                   Value="20"/>
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Seed"
+                               Foreground="White"
+                               HorizontalAlignment="Center"/>
+                    <TextBox x:Name="SeedInput"
+                             Width="140"
+                             Watermark="Случайно"
+                             HorizontalContentAlignment="Center" />
+                </StackPanel>
+
+                <Button Content="Сгенерировать"
+                        Click="OnGenerateMaze"
+                        Padding="16,6"
+                        HorizontalAlignment="Center"
+                        Background="WhiteSmoke"/>
+
+                <TextBlock Name="StatusText"
+                           Text="Используйте стрелки или WASD"
+                           Foreground="White"
+                           VerticalAlignment="Center"
+                           Margin="16,0,0,0" />
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                Margin="0,12,0,0"
+                Background="#111318"
+                CornerRadius="20"
+                Padding="12">
+            <controls:MazeView Name="MazeCanvas"
+                               PathBrush="White"
+                               StartBrush="#4CAF50"
+                               FinishBrush="#E53935" />
+        </Border>
+    </Grid>
+</Window>
