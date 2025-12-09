@@ -13,7 +13,7 @@ public class MazeGenerator
         var visited = new bool[height, width];
         var stack = new Stack<(int X, int Y)>();
 
-        // Базовый DFS для создания связного лабиринта
+        // Базистый DFS для лабиринта
         stack.Push((0, 0));
         visited[0, 0] = true;
 
@@ -34,7 +34,7 @@ public class MazeGenerator
             stack.Push(next);
         }
 
-        // Добавляем дополнительные стены для создания тупиков и усложнения
+        // усложнение
         AddDeadEnds(maze, random, width, height);
 
         return maze;
@@ -54,7 +54,7 @@ public class MazeGenerator
             if (maze.CanMove(x, y, 0, 1)) openPassages[y, x]++;
         }
 
-        // Добавляем стены в клетки с 3+ открытыми проходами (создаем тупики)
+        // Если 3+ открытых проходов, то тупик
         var cellsToModify = new List<(int X, int Y)>();
         for (var y = 0; y < height; y++)
         for (var x = 0; x < width; x++)
@@ -67,7 +67,7 @@ public class MazeGenerator
                 cellsToModify.Add((x, y));
         }
 
-        // Закрываем случайные проходы (20-30% от доступных клеток, более консервативно)
+        
         var toClose = (int)(cellsToModify.Count * (0.2 + random.NextDouble() * 0.1));
         toClose = Math.Min(toClose, cellsToModify.Count);
 
@@ -123,10 +123,10 @@ public class MazeGenerator
                 maze.HorizontalWalls[y + 1, x] = true;
             }
 
-            // Проверяем связность - если нарушена, откатываем изменение
+            // Проверка связности
             if (!IsConnected(maze, width, height))
             {
-                // Откатываем изменение
+                // Если неверно, то откат изменение
                 if (dx == -1) maze.VerticalWalls[y, x] = !wallWasOpen;
                 else if (dx == 1) maze.VerticalWalls[y, x + 1] = !wallWasOpen;
                 else if (dy == -1) maze.HorizontalWalls[y, x] = !wallWasOpen;
