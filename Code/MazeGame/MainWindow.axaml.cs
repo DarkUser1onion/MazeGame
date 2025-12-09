@@ -73,7 +73,6 @@ public partial class MainWindow : Window
         _lastClickedCell = null;
         _targetPosition = null;
         
-        // Деактивируем кнопку ИИ
         if (RunAiButton is not null)
         {
             RunAiButton.IsEnabled = false;
@@ -98,14 +97,11 @@ public partial class MainWindow : Window
 
         var (targetX, targetY) = cell.Value;
 
-        // Двойной клик для перемещения (если включено управление мышкой)
         if (MouseControlCheckBox?.IsChecked == true && e.ClickCount == 2)
         {
-            // Пытаемся найти путь и переместиться по нему
             var path = _solver.FindPath(view.Maze, _playerPosition.X, _playerPosition.Y, targetX, targetY);
             if (path.Count > 1 && path.Last() == (targetX, targetY))
             {
-                // Перемещаемся по первому шагу пути
                 var nextStep = path[1];
                 if (view.Maze.CanMove(_playerPosition.X, _playerPosition.Y, 
                     nextStep.X - _playerPosition.X, nextStep.Y - _playerPosition.Y))
@@ -114,7 +110,6 @@ public partial class MainWindow : Window
                     view.PlayerPosition = _playerPosition;
                     _steps++;
                     
-                    // Очищаем подсказку при движении
                     if (ShowHintsCheckBox?.IsChecked == true)
                     {
                         view.Path = new List<(int X, int Y)>();
@@ -125,14 +120,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Обычный клик: показываем подсказку (путь до кликнутой точки)
         if (ShowHintsCheckBox?.IsChecked == true)
         {
             ShowHintPath(view, targetX, targetY);
             _lastClickedCell = (targetX, targetY);
         }
 
-        // Начинаем перетаскивание для управления мышкой
         if (MouseControlCheckBox?.IsChecked == true)
         {
             _isDragging = true;
@@ -152,7 +145,6 @@ public partial class MainWindow : Window
 
         var (targetX, targetY) = cell.Value;
 
-        // Показываем подсказку при перетаскивании
         if (ShowHintsCheckBox?.IsChecked == true)
         {
             ShowHintPath(view, targetX, targetY);
@@ -178,7 +170,6 @@ public partial class MainWindow : Window
 
         var (targetX, targetY) = cell.Value;
 
-        // Перемещаемся по первому шагу пути
         var path = _solver.FindPath(view.Maze, _playerPosition.X, _playerPosition.Y, targetX, targetY);
         if (path.Count > 1 && path.Last() == (targetX, targetY))
         {
@@ -190,7 +181,6 @@ public partial class MainWindow : Window
                 view.PlayerPosition = _playerPosition;
                 _steps++;
                 
-                // Очищаем подсказку при движении
                 if (ShowHintsCheckBox?.IsChecked == true)
                 {
                     view.Path = new List<(int X, int Y)>();
@@ -216,7 +206,7 @@ public partial class MainWindow : Window
         {
             view.Path = path;
             
-            // Анимируем движение ИИ
+            // ИИ
             foreach (var (x, y) in path.Skip(1))
             {
                 _playerPosition = (x, y);
@@ -244,7 +234,6 @@ public partial class MainWindow : Window
             _targetPosition = (targetX, targetY);
             _lastClickedCell = (targetX, targetY);
             
-            // Активируем кнопку ИИ
             if (RunAiButton is not null)
             {
                 RunAiButton.IsEnabled = true;
@@ -257,7 +246,6 @@ public partial class MainWindow : Window
         if (MazeCanvas is not MazeView view || view.Maze is null || _isFinished || _isAiRunning)
             return;
 
-        // Используем последнюю кликнутую точку или финиш
         var (targetX, targetY) = _lastClickedCell ?? (view.Maze.Width - 1, view.Maze.Height - 1);
         
         await RunAiToTarget(view, targetX, targetY);
@@ -333,7 +321,6 @@ public partial class MainWindow : Window
                 
                 StatusText.Text = "🎉 Финиш! Поздравляем!";
                 
-                // Добавляем в лидерборд
                 var entry = new LeaderboardEntry
                 {
                     PlayerName = $"Игрок {_leaderboard.Count + 1}",
@@ -356,7 +343,7 @@ public partial class MainWindow : Window
         else
         {
             if (_isAiRunning)
-                StatusText.Text = "🤖 ИИ проходит лабиринт...";
+                StatusText.Text = "ИИ проходит лабиринт...";
             else if (_lastClickedCell.HasValue)
                 StatusText.Text = $"Кликните на место в лабиринте, чтобы увидеть путь. Нажмите кнопку ИИ для автоматического прохождения.";
             else
