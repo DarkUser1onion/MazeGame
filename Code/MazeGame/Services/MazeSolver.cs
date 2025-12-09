@@ -19,13 +19,13 @@ public class MazeSolver
         // Алгоритм следования по правой стене
         var path = FollowWall(maze, startX, startY, targetX, targetY, followRight: true);
         
-        // Если не нашли путь, пробуем следовать по левой стене
+        // Если не нашел путь, пробуем следовать по левой стене
         if (!path.Contains((targetX, targetY)))
         {
             path = FollowWall(maze, startX, startY, targetX, targetY, followRight: false);
         }
 
-        // Обрезаем петли для получения кратчайшего пути
+        // Обрезка петель
         return RemoveLoops(path);
     }
 
@@ -47,7 +47,7 @@ public class MazeSolver
 
             visited.Add((currentX, currentY));
 
-            // Определяем приоритетные направления для следования по стене
+            // Определение приоритетные направления для следования по стене
             var directions = GetWallFollowingDirections(direction, followRight);
             
             bool moved = false;
@@ -58,7 +58,7 @@ public class MazeSolver
                     var nextX = currentX + dx;
                     var nextY = currentY + dy;
                     
-                    // Избегаем зацикливания (но разрешаем возврат если долго не находим цель)
+                    // Избегание зацикливания
                     if (visited.Contains((nextX, nextY)) && path.Count > 10)
                     {
                         // Разрешаем возврат только если мы далеко от цели
@@ -88,7 +88,6 @@ public class MazeSolver
     private List<(int dx, int dy)> GetWallFollowingDirections((int dx, int dy) currentDir, bool followRight)
     {
         // Приоритеты для следования по правой/левой стене
-        // Всегда пытаемся повернуть в нужную сторону, затем идти прямо, затем в другую сторону, затем назад
         
         var right = followRight ? 1 : -1;
         var left = -right;
