@@ -14,3 +14,5 @@ public class LeaderboardEntry
     public string FormattedTime => $"{Time.Minutes:D2}:{Time.Seconds:D2}.{Time.Milliseconds:D3}";
 }
 
+
+

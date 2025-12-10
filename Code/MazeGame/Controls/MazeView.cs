@@ -213,7 +213,7 @@ public class MazeView : Control
             context.DrawLine(pen, points[i], points[i + 1]);
         }
 
-        // Рисуем точки на пути
+        // Рисуем точки на пути (полупрозрачные квадраты)
         IBrush? pointBrush = null;
         if (PathLineBrush is ISolidColorBrush solidBrush)
         {

@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     private Stopwatch _gameTimer = new();
     private bool _isAiRunning;
     private (int X, int Y)? _targetPosition;
+    private readonly List<(int X, int Y)> _playerPath = new(); // История пути игрока
 
     public MainWindow()
     {
@@ -37,6 +38,12 @@ public partial class MainWindow : Window
             MazeCanvas.PointerPressed += OnMazeCanvasPointerPressed;
             MazeCanvas.PointerMoved += OnMazeCanvasPointerMoved;
             MazeCanvas.PointerReleased += OnMazeCanvasPointerReleased;
+        }
+        
+        // Обработчик изменения состояния чекбокса "Показывать подсказки"
+        if (ShowHintsCheckBox is not null)
+        {
+            ShowHintsCheckBox.IsCheckedChanged += OnShowHintsChanged;
         }
         
         GenerateMaze();
@@ -55,6 +62,8 @@ public partial class MainWindow : Window
         _gameTimer.Start();
         _isAiRunning = false;
         _targetPosition = null;
+        _lastDragTarget = null;
+        _playerPath.Clear(); // Очищаем путь игрока
         
         if (MazeCanvas is not MazeView view || WidthInput is null || HeightInput is null)
             return;
@@ -69,10 +78,12 @@ public partial class MainWindow : Window
         view.Maze = _generator.Generate(width, height, seed);
         view.Path = new List<(int X, int Y)>();
         _playerPosition = (0, 0);
+        _playerPath.Add(_playerPosition); // Добавляем стартовую позицию в путь
         view.PlayerPosition = _playerPosition;
         _lastClickedCell = null;
         _targetPosition = null;
         
+        // Деактивируем кнопку ИИ
         if (RunAiButton is not null)
         {
             RunAiButton.IsEnabled = false;
@@ -80,9 +91,32 @@ public partial class MainWindow : Window
         
         UpdateStatusText();
     }
+    
+    private void OnShowHintsChanged(object? sender, RoutedEventArgs e)
+    {
+        if (MazeCanvas is null)
+            return;
+            
+        // Если подсказки отключены, очищаем текущий путь подсказок
+        if (ShowHintsCheckBox?.IsChecked == false)
+        {
+            // Очищаем только подсказки, но не путь игрока (если игра завершена)
+            if (!_isFinished)
+            {
+                MazeCanvas.Path = new List<(int X, int Y)>();
+            }
+            // Если игра завершена, путь игрока остается видимым
+        }
+        // Если подсказки включены, но игра завершена, показываем путь игрока
+        else if (_isFinished && _playerPath.Count > 0)
+        {
+            MazeCanvas.Path = new List<(int X, int Y)>(_playerPath);
+        }
+    }
 
     private (int X, int Y)? _lastClickedCell;
     private bool _isDragging;
+    private (int X, int Y)? _lastDragTarget;
 
     private void OnMazeCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
     {
@@ -97,38 +131,61 @@ public partial class MainWindow : Window
 
         var (targetX, targetY) = cell.Value;
 
+        // Двойной клик для перемещения (если включено управление мышкой)
         if (MouseControlCheckBox?.IsChecked == true && e.ClickCount == 2)
         {
+            // Проверяем, что целевая клетка отличается от текущей позиции
+            if (targetX == _playerPosition.X && targetY == _playerPosition.Y)
+                return;
+
+            // Пытаемся найти путь и переместиться по нему
             var path = _solver.FindPath(view.Maze, _playerPosition.X, _playerPosition.Y, targetX, targetY);
-            if (path.Count > 1 && path.Last() == (targetX, targetY))
+            
+            // Проверяем, что путь найден и валиден
+            if (path.Count < 2 || path[0] != (_playerPosition.X, _playerPosition.Y) || path.Last() != (targetX, targetY))
+                return;
+
+            // Перемещаемся по первому шагу пути
+            var nextStep = path[1];
+            
+            // Проверяем, что следующий шаг отличается от текущей позиции
+            if (nextStep.X == _playerPosition.X && nextStep.Y == _playerPosition.Y)
+                return;
+
+            // Вычисляем направление движения
+            var dx = nextStep.X - _playerPosition.X;
+            var dy = nextStep.Y - _playerPosition.Y;
+
+            // Проверяем, что движение возможно
+            if (view.Maze.CanMove(_playerPosition.X, _playerPosition.Y, dx, dy))
             {
-                var nextStep = path[1];
-                if (view.Maze.CanMove(_playerPosition.X, _playerPosition.Y, 
-                    nextStep.X - _playerPosition.X, nextStep.Y - _playerPosition.Y))
+                _playerPosition = nextStep;
+                _playerPath.Add(_playerPosition); // Добавляем новую позицию в путь
+                view.PlayerPosition = _playerPosition;
+                _steps++;
+                
+                // Очищаем подсказку при движении
+                if (ShowHintsCheckBox?.IsChecked == true)
                 {
-                    _playerPosition = nextStep;
-                    view.PlayerPosition = _playerPosition;
-                    _steps++;
-                    
-                    if (ShowHintsCheckBox?.IsChecked == true)
-                    {
-                        view.Path = new List<(int X, int Y)>();
-                    }
-                    UpdateStatusText();
+                    view.Path = new List<(int X, int Y)>();
                 }
+                UpdateStatusText();
             }
             return;
         }
 
+        // Обычный клик: показываем подсказку (путь до кликнутой точки)
         if (ShowHintsCheckBox?.IsChecked == true)
         {
             ShowHintPath(view, targetX, targetY);
             _lastClickedCell = (targetX, targetY);
         }
 
+        // Начинаем перетаскивание для управления мышкой
         if (MouseControlCheckBox?.IsChecked == true)
         {
             _isDragging = true;
+            _lastDragTarget = null; // Сбрасываем последнюю цель при начале перетаскивания
         }
     }
 
@@ -145,9 +202,16 @@ public partial class MainWindow : Window
 
         var (targetX, targetY) = cell.Value;
 
-        if (ShowHintsCheckBox?.IsChecked == true)
+        // Обновляем подсказку только если целевая клетка изменилась
+        if (!_lastDragTarget.HasValue || _lastDragTarget.Value != (targetX, targetY))
         {
-            ShowHintPath(view, targetX, targetY);
+            _lastDragTarget = (targetX, targetY);
+            
+            // Показываем подсказку при перетаскивании
+            if (ShowHintsCheckBox?.IsChecked == true)
+            {
+                ShowHintPath(view, targetX, targetY);
+            }
         }
     }
 
@@ -156,6 +220,7 @@ public partial class MainWindow : Window
         if (!_isDragging || MazeCanvas is not MazeView view || view.Maze is null || _isFinished || _isAiRunning)
         {
             _isDragging = false;
+            _lastDragTarget = null;
             return;
         }
 
@@ -165,31 +230,64 @@ public partial class MainWindow : Window
         if (cell is null)
         {
             _isDragging = false;
+            _lastDragTarget = null;
             return;
         }
 
         var (targetX, targetY) = cell.Value;
 
-        var path = _solver.FindPath(view.Maze, _playerPosition.X, _playerPosition.Y, targetX, targetY);
-        if (path.Count > 1 && path.Last() == (targetX, targetY))
+        // Проверяем, что целевая клетка отличается от текущей позиции
+        if (targetX == _playerPosition.X && targetY == _playerPosition.Y)
         {
-            var nextStep = path[1];
-            if (view.Maze.CanMove(_playerPosition.X, _playerPosition.Y, 
-                nextStep.X - _playerPosition.X, nextStep.Y - _playerPosition.Y))
+            _isDragging = false;
+            _lastDragTarget = null;
+            return;
+        }
+
+        // Перемещаемся по первому шагу пути
+        var path = _solver.FindPath(view.Maze, _playerPosition.X, _playerPosition.Y, targetX, targetY);
+        
+        // Проверяем, что путь найден и валиден
+        if (path.Count < 2 || path[0] != (_playerPosition.X, _playerPosition.Y) || path.Last() != (targetX, targetY))
+        {
+            _isDragging = false;
+            _lastDragTarget = null;
+            return;
+        }
+
+        // Берем следующий шаг из пути
+        var nextStep = path[1];
+        
+        // Проверяем, что следующий шаг отличается от текущей позиции
+        if (nextStep.X == _playerPosition.X && nextStep.Y == _playerPosition.Y)
+        {
+            _isDragging = false;
+            _lastDragTarget = null;
+            return;
+        }
+
+        // Вычисляем направление движения
+        var dx = nextStep.X - _playerPosition.X;
+        var dy = nextStep.Y - _playerPosition.Y;
+
+        // Проверяем, что движение возможно
+        if (view.Maze.CanMove(_playerPosition.X, _playerPosition.Y, dx, dy))
+        {
+            _playerPosition = nextStep;
+            _playerPath.Add(_playerPosition); // Добавляем новую позицию в путь
+            view.PlayerPosition = _playerPosition;
+            _steps++;
+            
+            // Очищаем подсказку при движении
+            if (ShowHintsCheckBox?.IsChecked == true)
             {
-                _playerPosition = nextStep;
-                view.PlayerPosition = _playerPosition;
-                _steps++;
-                
-                if (ShowHintsCheckBox?.IsChecked == true)
-                {
-                    view.Path = new List<(int X, int Y)>();
-                }
-                UpdateStatusText();
+                view.Path = new List<(int X, int Y)>();
             }
+            UpdateStatusText();
         }
 
         _isDragging = false;
+        _lastDragTarget = null;
     }
 
     private async Task RunAiToTarget(MazeView view, int targetX, int targetY)
@@ -206,10 +304,11 @@ public partial class MainWindow : Window
         {
             view.Path = path;
             
-            // ИИ
+            // Анимируем движение ИИ
             foreach (var (x, y) in path.Skip(1))
             {
                 _playerPosition = (x, y);
+                _playerPath.Add(_playerPosition); // Добавляем новую позицию в путь
                 view.PlayerPosition = _playerPosition;
                 _steps++;
                 await Task.Delay(50); // Задержка для анимации
@@ -234,6 +333,7 @@ public partial class MainWindow : Window
             _targetPosition = (targetX, targetY);
             _lastClickedCell = (targetX, targetY);
             
+            // Активируем кнопку ИИ
             if (RunAiButton is not null)
             {
                 RunAiButton.IsEnabled = true;
@@ -246,6 +346,7 @@ public partial class MainWindow : Window
         if (MazeCanvas is not MazeView view || view.Maze is null || _isFinished || _isAiRunning)
             return;
 
+        // Используем последнюю кликнутую точку или финиш
         var (targetX, targetY) = _lastClickedCell ?? (view.Maze.Width - 1, view.Maze.Height - 1);
         
         await RunAiToTarget(view, targetX, targetY);
@@ -279,6 +380,7 @@ public partial class MainWindow : Window
             return false;
 
         _playerPosition = (_playerPosition.X + dx, _playerPosition.Y + dy);
+        _playerPath.Add(_playerPosition); // Добавляем новую позицию в путь
         MazeCanvas.PlayerPosition = _playerPosition;
         _steps++;
 
@@ -321,6 +423,13 @@ public partial class MainWindow : Window
                 
                 StatusText.Text = "🎉 Финиш! Поздравляем!";
                 
+                // Показываем путь, который прошел игрок
+                if (MazeCanvas is not null && _playerPath.Count > 0)
+                {
+                    MazeCanvas.Path = new List<(int X, int Y)>(_playerPath);
+                }
+                
+                // Добавляем в лидерборд
                 var entry = new LeaderboardEntry
                 {
                     PlayerName = $"Игрок {_leaderboard.Count + 1}",
@@ -343,7 +452,7 @@ public partial class MainWindow : Window
         else
         {
             if (_isAiRunning)
-                StatusText.Text = "ИИ проходит лабиринт...";
+                StatusText.Text = "🤖 ИИ проходит лабиринт...";
             else if (_lastClickedCell.HasValue)
                 StatusText.Text = $"Кликните на место в лабиринте, чтобы увидеть путь. Нажмите кнопку ИИ для автоматического прохождения.";
             else

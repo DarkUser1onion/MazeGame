@@ -12,11 +12,13 @@
         Background="#0F1419"
         Padding="0">
     <Grid ColumnDefinitions="300,*" RowDefinitions="Auto,*">
+        <!-- Левая панель с настройками и лидербордом -->
         <Border Grid.Column="0" 
                 Background="#1A1F2E"
                 BorderBrush="#2A3441"
                 BorderThickness="0,0,1,0">
             <Grid RowDefinitions="Auto,Auto,*">
+                <!-- Настройки генерации -->
                 <Border Grid.Row="0"
                         Background="#252B3B"
                         Padding="16"
@@ -90,6 +92,7 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Статистика -->
                 <Border Grid.Row="1"
                         Background="#252B3B"
                         Padding="16"
@@ -110,6 +113,7 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Лидерборд -->
                 <Border Grid.Row="2"
                         Background="#252B3B"
                         Padding="16"
@@ -148,6 +152,7 @@
             </Grid>
         </Border>
 
+        <!-- Основная область с лабиринтом -->
         <Grid Grid.Column="1" RowDefinitions="Auto,*">
             <Border Grid.Row="0"
                     Background="#1A1F2E"
